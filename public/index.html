@@ -1,43 +1,52 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="Web site created using create-react-app"
-    />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
+<html>
+<head>
+  <title>Web Push Test</title>
+</head>
+<body>
+  <h1>Web Push Test</h1>
+  <button id="subscribeBtn">Subscribe for Notifications</button>
+  <button id="testBtn">Send Test Notification</button>
 
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-    <title>React App</title>
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
+  <script>
+    const VAPID_PUBLIC_KEY = 'BECdznON0kordXAykztTHYoGH-FJob6lahPtmKMFI5nKTE7v79ctbscxdQTAGjxnEszphNS-Cbx1PwRb7vA0v20';
 
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+      const rawData = atob(base64);
+      return new Uint8Array([...rawData].map(c => c.charCodeAt(0)));
+    }
 
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
-  </body>
+    document.getElementById('subscribeBtn').addEventListener('click', async () => {
+      const registration = await navigator.serviceWorker.register('/sw.js');
+
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+
+      response = await fetch('http://localhost:8080/notifications/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: "include",
+        body: JSON.stringify(subscription)
+      });
+      console.log("response of subscribe", response);
+      // alert('Subscribed! You can now send notifications.');
+    });
+
+    document.getElementById('testBtn').addEventListener('click', async () => {
+      console.log("are you here?")
+      const res = await fetch('http://localhost:8080/notifications/test-notification', {
+        method: 'GET',
+        credentials: "include",
+      });
+      // const res = await fetch('http://localhost:8080/notifications/test-notification');
+      console.log("hello",res);
+      const data = await res.json();
+      console.log("hello",data);
+      // alert(JSON.stringify(data));
+    });
+  </script>
+</body>
 </html>
